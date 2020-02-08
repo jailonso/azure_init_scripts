@@ -1,63 +1,36 @@
-%python 
-
-dbutils.fs.put("dbfs:/<init-script-folder>/datadog-install-driver-only.sh","""
 #!/bin/bash
 
-echo "Running on the driver? $DB_IS_DRIVER"
-echo "Driver ip: $DB_DRIVER_IP"
-
-cat <<EOF >> /tmp/start_datadog.sh
-#!/bin/bash
-
-if [ \$DB_IS_DRIVER ]; then
-  echo "On the driver. Installing Datadog ..."
   
-  # install the Datadog agent
-  DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=2eef0e58f4d6785d8a6ce108bf62e3e7 DD_SITE="datadoghq.eu" bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
+# install the Datadog agent
+DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=127b3bdc7ea5d8e92c2f14694378b0c9 DD_TAGS="env:edp" DD_SITE="datadoghq.eu" bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
 
-  
-  # WAITING UNTIL MASTER PARAMS ARE LOADED, THEN GRABBING IP AND PORT
-  while [ -z \$gotparams ]; do
-    if [ -e "/tmp/master-params" ]; then
-      DB_DRIVER_PORT=\$(cat /tmp/master-params | cut -d' ' -f2)
-      gotparams=TRUE
-    fi
-    sleep 2
-  done
+# Enable logs and process
+echo "logs_enabled: true" >> /etc/datadog-agent/datadog.yaml
+echo "process_config:
+enabled: "true"" >>/etc/datadog-agent/datadog.yaml
+# Enable network
+sudo -u dd-agent cp /etc/datadog-agent/system-probe.yaml.example /etc/datadog-agent/system-probe.yaml
+sudo -u dd-agent echo "system_probe_config:
+enabled: true" >> /etc/datadog-agent/system-probe.yaml
 
-  current=\$(hostname -I | xargs)  
-  
-  # Install latest version of spark integration
-  sudo -u dd-agent -- datadog-agent integration install datadog-spark==1.11.3
+#Enable Kafka
 
-  # Enable logs and process
-  echo "logs_enabled: true" >> /etc/datadog-agent/datadog.yaml
-  echo "process_config:
-  enabled: "true"" >>/etc/datadog-agent/datadog.yaml
-  # Enable network
-  sudo -u dd-agent cp /etc/datadog-agent/system-probe.yaml.example /etc/datadog-agent/system-probe.yaml
-  sudo -u dd-agent echo "system_probe_config:
-  enabled: true" >> /etc/datadog-agent/system-probe.yaml
+cp /etc/datadog-agent/conf.d/kafka.d/conf.yaml.example /etc/datadog-agent/conf.d/kafka.d/conf.yaml
 
-  # WRITING SPARK CONFIG FILE FOR STREAMING SPARK METRICS
-  echo "init_config:
-instances:
-    - resourcemanager_uri: http://\$DB_DRIVER_IP:\$DB_DRIVER_PORT
-      spark_cluster_mode: spark_standalone_mode
-      cluster_name: \$current" > /etc/datadog-agent/conf.d/spark.yaml
+#Increase number of metrics for kafka
+sed -i '/port:/a \ \ \ \ \max_returned_metrics: 1000' /etc/datadog-agent/conf.d/kafka.d/conf.yaml
 
-  # RESTARTING AGENT
-  sudo service datadog-agent-sysprobe start
-  sudo service datadog-agent restart
-
-fi
-EOF
-
-# CLEANING UP
-if [ \$DB_IS_DRIVER ]; then
-  chmod a+x /tmp/start_datadog.sh
-  /tmp/start_datadog.sh >> /tmp/datadog_start.log 2>&1 & disown
-fi
-""", True)
-Wrote 1187 bytes.
-Out[1]: True
+#Enable logs for kafka
+echo "logs:
+ - type: file
+   path: /var/log/kafka/server.log
+   source: kafka
+   service: myapp
+   log_processing_rules:
+     - type: multi_line
+       name: log_start_with_date
+       pattern: \d{4}\-(0?[1-9]|1[012])\-(0?[1-9]|[12][0-9]|3[01])" >/tmp/logs.config
+sed -i '/## Log Section/r logs.config' /etc/datadog-agent/conf.d/kafka.d/conf.yaml
+# RESTARTING AGENT
+sudo service datadog-agent-sysprobe start
+sudo service datadog-agent restart
