@@ -2,26 +2,25 @@
 
   
 # install the Datadog agent
-DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=127b3bdc7ea5d8e92c2f14694378b0c9 DD_TAGS="env:edp" DD_SITE="datadoghq.eu" bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
+DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=xxx DD_TAGS="env:edp" DD_SITE="datadoghq.eu" bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
 
 # Enable logs and process
-echo "logs_enabled: true" >> /etc/datadog-agent/datadog.yaml
-echo "process_config:
-enabled: "true"" >>/etc/datadog-agent/datadog.yaml
+sudo sed -i '/# logs_enabled: false/a logs_enabled: true' /etc/datadog-agent/datadog.yaml
+sudo sed -i '/# process_config:/a process_config:\n\ \ \enabled: "true"' /etc/datadog-agent/datadog.yaml
+
 # Enable network
 sudo -u dd-agent cp /etc/datadog-agent/system-probe.yaml.example /etc/datadog-agent/system-probe.yaml
-sudo -u dd-agent echo "system_probe_config:
-enabled: true" >> /etc/datadog-agent/system-probe.yaml
+sudo sed -i '/# system_probe_config:/a system_probe_config:\n\ \ \enabled: "true"' /etc/datadog-agent/system-probe.yaml
 
 #Enable Kafka
 
-cp /etc/datadog-agent/conf.d/kafka.d/conf.yaml.example /etc/datadog-agent/conf.d/kafka.d/conf.yaml
+sudo cp /etc/datadog-agent/conf.d/kafka.d/conf.yaml.example /etc/datadog-agent/conf.d/kafka.d/conf.yaml
 
 #Increase number of metrics for kafka
-sed -i '/port:/a \ \ \ \ \max_returned_metrics: 1000' /etc/datadog-agent/conf.d/kafka.d/conf.yaml
+sudo sed -i '/port:/a \ \ \ \ \max_returned_metrics: 1000' /etc/datadog-agent/conf.d/kafka.d/conf.yaml
 
 #Enable logs for kafka
-echo "logs:
+sudo echo "logs:
  - type: file
    path: /var/log/kafka/server.log
    source: kafka
@@ -30,7 +29,7 @@ echo "logs:
      - type: multi_line
        name: log_start_with_date
        pattern: \d{4}\-(0?[1-9]|1[012])\-(0?[1-9]|[12][0-9]|3[01])" >/tmp/logs.config
-sed -i '/## Log Section/r logs.config' /etc/datadog-agent/conf.d/kafka.d/conf.yaml
+sudo sed -i '/## Log Section/r /tmp/logs.config' /etc/datadog-agent/conf.d/kafka.d/conf.yaml
 # RESTARTING AGENT
 sudo service datadog-agent-sysprobe start
 sudo service datadog-agent restart
