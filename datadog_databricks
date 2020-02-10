@@ -35,6 +35,9 @@ if [ \$DB_IS_DRIVER ]; then
   sudo -u dd-agent cp /etc/datadog-agent/system-probe.yaml.example /etc/datadog-agent/system-probe.yaml
   sudo sed -i '/# system_probe_config:/a system_probe_config:\n\ \ \enabled: "true"' /etc/datadog-agent/system-probe.yaml
 
+  # use latest version of spark integraiton3
+  sudo -u dd-agent -- datadog-agent integration install datadog-spark==1.11.3
+
   # WRITING SPARK CONFIG FILE FOR STREAMING SPARK METRICS
   echo "init_config:
 instances:
