@@ -8,12 +8,16 @@ echo "Driver ip: $DB_DRIVER_IP"
 
 cat <<EOF >> /tmp/start_datadog.sh
 #!/bin/bash
+DD_API_KEY="xxx"
+DD_SITE="datadoghq.eu"
+DD_TAGS="env:edp"
+DATADOG_ROOT_PATH="/etc/datadog-agent"
 
 if [ \$DB_IS_DRIVER ]; then
   echo "On the driver. Installing Datadog ..."
   
   # install the Datadog agent
-  DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=xxx DD_TAGS="env:edp" DD_SITE="datadoghq.eu" bash -c "\$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
+  DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=$DD_API_KEY DD_TAGS="$DD_TAGS" DD_SITE="$DD_SITE" bash -c "\$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
   
   
   # WAITING UNTIL MASTER PARAMS ARE LOADED, THEN GRABBING IP AND PORT
@@ -25,27 +29,32 @@ if [ \$DB_IS_DRIVER ]; then
     sleep 2
   done
 
+  # Get current hostname
   current=\$(hostname -I | xargs)  
   
-  # Enable logs and process
-  sudo sed -i '/# logs_enabled: false/a logs_enabled: true' /etc/datadog-agent/datadog.yaml
-  sudo sed -i '/# process_config:/a process_config:\n\ \ \enabled: "true"' /etc/datadog-agent/datadog.yaml
-
-  # Enable network
-  sudo -u dd-agent cp /etc/datadog-agent/system-probe.yaml.example /etc/datadog-agent/system-probe.yaml
-  sudo sed -i '/# system_probe_config:/a system_probe_config:\n\ \ \enabled: "true"' /etc/datadog-agent/system-probe.yaml
-
-  # use latest version of spark integraiton3
+  # Enable logs, process and network collection
+  echo -e "\nEnabling logs, network and process collection..."
+  cat >> $DATADOG_ROOT_PATH/datadog.yaml <<EOL
+  logs_enabled: true
+  system_probe_config:
+    enabled: "true"
+  process_config:
+    enabled: "true"
+  EOL
+ 
+  sudo -u dd-agent cp $DATADOG_ROOT_PATH/system-probe.yaml.example $DATADOG_ROOT_PATH/system-probe.yaml
+  
+  # Enable spark integration for streaming spark metrics
+  echo -e "\nEnabling spark integration..."
   sudo -u dd-agent -- datadog-agent integration install datadog-spark==1.11.3
-
-  # WRITING SPARK CONFIG FILE FOR STREAMING SPARK METRICS
-  echo "init_config:
-instances:
-    - resourcemanager_uri: http://\$DB_DRIVER_IP:\$DB_DRIVER_PORT
-      spark_cluster_mode: spark_standalone_mode
-      cluster_name: \$current" > /etc/datadog-agent/conf.d/spark.yaml
-
-  # RESTARTING AGENT
+  cat > $DATADOG_ROOT_PATH/conf.d/spark.yaml << EOL
+  instances:
+      - resourcemanager_uri: http://$DB_DRIVER_IP:$DB_DRIVER_PORT
+        spark_cluster_mode: spark_standalone_mode
+        cluster_name: $current
+  EOL
+  
+  # Restart datadog agent
   sudo service datadog-agent-sysprobe start
   sudo service datadog-agent restart
 
