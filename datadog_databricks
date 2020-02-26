@@ -27,15 +27,18 @@ if [ \$DB_IS_DRIVER ]; then
 
   current=\$(hostname -I | xargs)  
   
-  # Enable logs and process
-  sudo sed -i '/# logs_enabled: false/a logs_enabled: true' /etc/datadog-agent/datadog.yaml
-  sudo sed -i '/# process_config:/a process_config:\n\ \ \enabled: "true"' /etc/datadog-agent/datadog.yaml
-
-  # Enable network
+  # Enable logs, process and network collection
+  echo -e "\nEnabling logs, network and process collection..."
+  cat >> /etc/datadog-agent/datadog.yaml <<EOL
+  logs_enabled: true
+  system_probe_config:
+    enabled: "true"
+  process_config:
+    enabled: "true"
+  EOL
   sudo -u dd-agent cp /etc/datadog-agent/system-probe.yaml.example /etc/datadog-agent/system-probe.yaml
-  sudo sed -i '/# system_probe_config:/a system_probe_config:\n\ \ \enabled: "true"' /etc/datadog-agent/system-probe.yaml
-
-  # use latest version of spark integraiton3
+  
+  # use latest version of spark integration
   sudo -u dd-agent -- datadog-agent integration install datadog-spark==1.11.3
 
   # WRITING SPARK CONFIG FILE FOR STREAMING SPARK METRICS
