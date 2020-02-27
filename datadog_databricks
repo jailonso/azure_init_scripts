@@ -5,7 +5,7 @@ dbutils.fs.put("dbfs:/databricks/init/datadog-install-driver-only.sh","""
 
 echo "Running on the driver? $DB_IS_DRIVER"
 echo "Driver ip: $DB_DRIVER_IP"
-
+rm /tmp/start_datadog.sh
 cat <<EOF >> /tmp/start_datadog.sh
 #!/bin/bash
 DD_API_KEY="xxx"
