@@ -18,7 +18,7 @@ if [ \$DB_IS_DRIVER ]; then
   
   # install the Datadog agent
   DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=\$DD_API_KEY DD_TAGS="\$DD_TAGS" DD_SITE="\$DD_SITE" bash -c "\$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
-  
+  chown dd-agent /etc/datadog-agent/auth
   
   # WAITING UNTIL MASTER PARAMS ARE LOADED, THEN GRABBING IP AND PORT
   while [ -z \$gotparams ]; do
