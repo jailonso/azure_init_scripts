@@ -2,15 +2,25 @@
 
   
 # install the Datadog agent
-DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=xxx DD_TAGS="env:edp" DD_SITE="datadoghq.eu" bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
+DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=xxx DD_SITE="datadoghq.eu" bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
+chown dd-agent /etc/datadog-agent/auth
 
 # Enable logs and process
 sudo sed -i '/# logs_enabled: false/a logs_enabled: true' /etc/datadog-agent/datadog.yaml
 sudo sed -i '/# process_config:/a process_config:\n\ \ \enabled: "true"' /etc/datadog-agent/datadog.yaml
 
-# Enable network
+ # Enable logs, process and network collection
+sudo -u dd-agent echo "logs_enabled: true
+process_config:
+  enabled: \"true\"
+tags:
+    - "env:edp"" >>/etc/datadog-agent/datadog.yaml
+
 sudo -u dd-agent cp /etc/datadog-agent/system-probe.yaml.example /etc/datadog-agent/system-probe.yaml
-sudo sed -i '/# system_probe_config:/a system_probe_config:\n\ \ \enabled: "true"' /etc/datadog-agent/system-probe.yaml
+
+  # Enable network collection
+sudo -u dd-agent  echo "system_probe_config:
+  enabled: true" >> /etc/datadog-agent/system-probe.yaml
 
 #Enable Kafka
 
