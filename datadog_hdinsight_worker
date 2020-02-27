@@ -5,10 +5,6 @@
 DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=xxx DD_SITE="datadoghq.eu" bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
 chown dd-agent /etc/datadog-agent/auth
 
-# Enable logs and process
-sudo sed -i '/# logs_enabled: false/a logs_enabled: true' /etc/datadog-agent/datadog.yaml
-sudo sed -i '/# process_config:/a process_config:\n\ \ \enabled: "true"' /etc/datadog-agent/datadog.yaml
-
  # Enable logs, process and network collection
 sudo -u dd-agent echo "logs_enabled: true
 process_config:
