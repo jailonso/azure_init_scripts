@@ -14,7 +14,7 @@ sudo -u dd-agent echo "logs_enabled: true
 process_config:
   enabled: \"true\"
 tags:
-    - "env:edp"" >>/etc/datadog-agent/datadog.yaml
+    - "env:xxx"" >>/etc/datadog-agent/datadog.yaml
 
 sudo -u dd-agent cp /etc/datadog-agent/system-probe.yaml.example /etc/datadog-agent/system-probe.yaml
 
