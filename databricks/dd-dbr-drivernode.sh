@@ -7,7 +7,7 @@ rm /tmp/start_datadog.sh
 
 cat <<EOF > /tmp/start_datadog.sh
 #!/bin/bash
-DD_API_KEY="c959a9e2aff305aa725711dbba3db43b"
+DD_API_KEY="xxx"
 DD_SITE="datadoghq.com"
 
 DATADOG_ROOT_PATH="/etc/datadog-agent"
@@ -46,10 +46,6 @@ tags:
   - role:driver
   - vendor:databricks
   - cloud_provider:azure
-  - subscription_name:data-dev
-  - customer:basf
-  - environment:dev
-  - db_workspace:datalake-dbr-weu1-dev-001
   - db_shard_name:\$DB_SHARD_NAME
   - db_cluster_id:\$DB_CLUSTER_ID
   - db_cluster_name:\$DB_CLUSTER_NAME
