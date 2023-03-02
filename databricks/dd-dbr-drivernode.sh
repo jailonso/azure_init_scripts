@@ -56,7 +56,7 @@ use_dogstatsd: true
 dogstatsd_port: 8125" >>/etc/datadog-agent/datadog.yaml
 
 cat /tmp/dogstatsd-generated.yaml >> /etc/datadog-agent/datadog.yaml
-
+# echo hostname:host >>/etc/datadog-agent/datadog.yaml ##to have a unique hostname and avoid multiple hosts for job clusters
 sudo -u dd-agent cp /etc/datadog-agent/system-probe.yaml.example /etc/datadog-agent/system-probe.yaml
 
   # Enable network collection
